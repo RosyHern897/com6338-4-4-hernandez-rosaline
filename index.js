@@ -66,7 +66,7 @@ function isLetter(k) {
 // Handle a guess
 function handleGuess(letter) {
   const l = letter.toLowerCase();
-  if (!isLetter(l)) return; // ignore non-letters
+  if (!isLetter(l)) return;                      // ignore non-letters
   if (correctSet.has(l) || incorrectSet.has(l)) return; // ignore repeats
 
   if (currentWord.includes(l)) {
@@ -102,9 +102,21 @@ function handleGuess(letter) {
   updateUI();
 }
 
-// Listen for key presses
-document.addEventListener('keyup', (e) => handleGuess(e.key));
-document.body.addEventListener('keyup', (e) => handleGuess(e.key));
+// --- Listen for key presses (guard against duplicate synthetic events) ---
+let _suppress = false;
+function guardedListener(e) {
+  if (_suppress) return;
+  _suppress = true;
+  try {
+    handleGuess(e.key);
+  } finally {
+    // release on next macrotask so document/body back-to-back dispatch collapses to one
+    setTimeout(() => { _suppress = false; }, 0);
+  }
+}
+
+document.addEventListener('keyup', guardedListener);
+document.body.addEventListener('keyup', guardedListener);
 
 // Start the game
 startRound();
